@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Marketing Project Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Calm Neutral Blue" -->
+    <!-- Application Structure Plan: A single-page dashboard with tabbed navigation (Dashboard, Projects, Tasks, Team) is chosen for its familiarity and efficiency, allowing users to switch contexts without page reloads. The Dashboard provides immediate high-level insights. Projects are shown in a card grid with a modal for deep-dives to prevent clutter. The Tasks view features a toggle between a List and a Kanban board to cater to different workflow preferences. KPIs are embedded within project details for context-specific performance data, making the information more actionable. This structure translates the report's entities into a logical, task-oriented UI. -->
+    <!-- Visualization & Content Choices: Dashboard Stats (Report Info: Project/Task counts -> Goal: Inform -> Viz: HTML cards -> Interaction: None -> Justification: Quick, scannable data); Dashboard Budget (Report Info: Aggregated budget -> Goal: Compare -> Viz: Donut Chart -> Interaction: Hover -> Justification: Intuitive part-to-whole comparison -> Library: Chart.js); Project KPIs (Report Info: KPI Target vs. Actual -> Goal: Compare -> Viz: Grouped Bar Chart -> Interaction: Hover -> Justification: Direct value comparison -> Library: Chart.js); Task Status (Report Info: Task status -> Goal: Organize/Change -> Viz: Kanban Board -> Interaction: Drag & Drop -> Justification: Visual, interactive workflow management -> Library: HTML/JS). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .kanban-column { min-height: 400px; }
+        .kanban-card { cursor: grab; }
+        .kanban-card:active { cursor: grabbing; opacity: 0.8; transform: scale(1.02); }
+        .dragging { opacity: 0.5; }
+        .nav-btn-active { background-color: #3b82f6; color: white; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="app" class="min-h-screen">
+        <header class="bg-white shadow-sm sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <h1 class="text-2xl font-bold text-gray-900">Digital Marketing Project Hub</h1>
+                    <nav class="hidden md:flex space-x-4" id="desktop-nav">
+                        <button data-view="dashboard" class="nav-btn px-3 py-2 rounded-md text-sm font-medium">Dashboard</button>
+                        <button data-view="projects" class="nav-btn px-3 py-2 rounded-md text-sm font-medium">Projects</button>
+                        <button data-view="tasks" class="nav-btn px-3 py-2 rounded-md text-sm font-medium">Tasks</button>
+                        <button data-view="team" class="nav-btn px-3 py-2 rounded-md text-sm font-medium">Team</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div id="dashboard-view" class="view-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Dashboard</h2>
+                    <p class="mt-1 text-gray-600">A high-level overview of all active digital marketing initiatives. This section provides at-a-glance metrics on project status, budget utilization, and upcoming deadlines to help you prioritize and monitor progress effectively.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow"><h3 class="text-gray-500">Active Projects</h3><p id="active-projects-stat" class="text-3xl font-bold mt-2"></p></div>
+                    <div class="bg-white p-6 rounded-lg shadow"><h3 class="text-gray-500">Tasks Due Today</h3><p id="tasks-due-stat" class="text-3xl font-bold mt-2"></p></div>
+                    <div class="bg-white p-6 rounded-lg shadow"><h3 class="text-gray-500">Overdue Tasks</h3><p id="overdue-tasks-stat" class="text-3xl font-bold mt-2 text-red-500"></p></div>
+                    <div class="bg-white p-6 rounded-lg shadow"><h3 class="text-gray-500">Total Budget Spent</h3><p id="budget-spent-stat" class="text-3xl font-bold mt-2"></p></div>
+                </div>
+                <div class="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Overall Budget Status</h3>
+                        <div class="chart-container mx-auto">
+                            <canvas id="budget-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Projects Nearing Deadline</h3>
+                        <ul id="deadline-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="projects-view" class="view-content hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Projects</h2>
+                    <p class="mt-1 text-gray-600">Explore all digital marketing projects. Click on any project card to view its detailed information, including associated tasks, budget breakdown, and performance against key indicators (KPIs). Use the filters to narrow down your search.</p>
+                </div>
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+
+            <div id="tasks-view" class="view-content hidden">
+                 <div class="mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Tasks</h2>
+                    <p class="mt-1 text-gray-600">Manage all project tasks in one place. You can switch between a Kanban board for a visual workflow overview and a simple list view for quick details. Drag and drop cards on the Kanban board to update task statuses.</p>
+                </div>
+                <div class="mb-4">
+                    <div class="inline-flex rounded-md shadow-sm">
+                        <button id="show-kanban-btn" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white border border-gray-200 rounded-l-lg hover:bg-blue-700">Kanban View</button>
+                        <button id="show-list-btn" class="px-4 py-2 text-sm font-medium bg-white text-gray-900 border-t border-b border-r border-gray-200 hover:bg-gray-100 rounded-r-md">List View</button>
+                    </div>
+                </div>
+                <div id="kanban-board-view">
+                    <div id="kanban-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+                </div>
+                <div id="list-view" class="hidden bg-white p-4 rounded-lg shadow">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody id="task-list-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="team-view" class="view-content hidden">
+                 <div class="mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Team Members</h2>
+                    <p class="mt-1 text-gray-600">A directory of all team members involved in the projects. This section provides quick access to roles and contact information, facilitating seamless communication and collaboration across the team.</p>
+                </div>
+                <div id="team-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="project-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-30 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 id="modal-project-name" class="text-2xl leading-6 font-bold text-gray-900"></h3>
+                        <p id="modal-project-client" class="text-sm text-gray-500 mt-1"></p>
+                    </div>
+                    <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Project Details</h4>
+                        <div id="modal-project-details" class="text-sm space-y-2"></div>
+                        <h4 class="font-semibold text-gray-700 mt-4 mb-2">Budget</h4>
+                        <div class="chart-container" style="height: 250px; max-height: 250px;">
+                            <canvas id="modal-budget-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Key Performance Indicators</h4>
+                         <div class="chart-container" style="height: 350px; max-height: 350px;">
+                            <canvas id="modal-kpi-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="task-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-30 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 id="modal-task-name" class="text-2xl leading-6 font-bold text-gray-900"></h3>
+                        <p id="modal-task-project" class="text-sm text-gray-500 mt-1"></p>
+                    </div>
+                    <button id="close-task-modal-btn" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <div class="mt-4 text-sm space-y-2">
+                    <p><strong class="font-medium text-gray-600">Assigned To:</strong> <span id="modal-task-assigned-to"></span></p>
+                    <p><strong class="font-medium text-gray-600">Due Date:</strong> <span id="modal-task-due-date"></span></p>
+                    <p><strong class="font-medium text-gray-600">Status:</strong> <span id="modal-task-status" class="text-xs font-semibold px-2 py-1 rounded-full"></span></p>
+                    <p><strong class="font-medium text-gray-600">Priority:</strong> <span id="modal-task-priority" class="text-xs font-semibold px-2 py-1 rounded-full"></span></p>
+                    <p><strong class="font-medium text-gray-600">Type:</strong> <span id="modal-task-type"></span></p>
+                </div>
+                <div id="content-idea-section" class="mt-6 border-t pt-4 hidden">
+                    <h4 class="font-semibold text-gray-700 mb-2">Content Ideas ✨</h4>
+                    <button id="generate-ideas-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">Generate Content Ideas ✨</button>
+                    <div id="content-ideas-output" class="mt-3 p-3 bg-gray-100 rounded-md text-sm whitespace-pre-wrap"></div>
+                    <div id="loading-indicator" class="mt-2 text-blue-600 hidden">Generating ideas...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-20 flex justify-around" id="mobile-nav">
+        <button data-view="dashboard" class="flex-1 p-2 text-center text-xs">Dashboard</button>
+        <button data-view="projects" class="flex-1 p-2 text-center text-xs">Projects</button>
+        <button data-view="tasks" class="flex-1 p-2 text-center text-xs">Tasks</button>
+        <button data-view="team" class="flex-1 p-2 text-center text-xs">Team</button>
+    </nav>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const DB = {
+        team: [
+            { id: 1, name: 'Alice Johnson', role: 'Project Manager', email: 'alice@example.com' },
+            { id: 2, name: 'Bob Williams', role: 'SEO Specialist', email: 'bob@example.com' },
+            { id: 3, name: 'Charlie Brown', role: 'PPC Specialist', email: 'charlie@example.com' },
+            { id: 4, name: 'Diana Miller', role: 'Content Creator', email: 'diana@example.com' },
+        ],
+        projects: [
+            { id: 1, name: 'Q3 Social Media Blitz', client: 'Innovate Inc.', managerId: 1, startDate: '2025-07-01', endDate: nextWeekStr, status: 'In Progress', budgetAllocated: 15000, budgetSpent: 9500, campaignType: ['Social Media', 'Content Marketing'] },
+            { id: 2, name: 'Global SEO Overhaul', client: 'TechCorp', managerId: 1, startDate: '2025-06-15', endDate: '2025-08-30', status: 'In Progress', budgetAllocated: 25000, budgetSpent: 18000, campaignType: ['SEO', 'Analytics'] },
+            { id: 3, name: 'Summer PPC Campaign', client: 'Retail Giant', managerId: 1, startDate: '2025-07-10', endDate: '2025-08-15', status: 'Not Started', budgetAllocated: 10000, budgetSpent: 0, campaignType: ['PPC'] },
+            { id: 4, name: 'Website Redesign', client: 'Innovate Inc.', managerId: 1, startDate: '2025-05-01', endDate: '2025-07-25', status: 'Completed', budgetAllocated: 30000, budgetSpent: 29500, campaignType: ['Web Development', 'Design'] },
+        ],
+        tasks: [
+            { id: 1, projectId: 1, name: 'Draft Instagram Posts', assignedTo: 4, dueDate: tomorrowStr, status: 'In Progress', priority: 'High', taskType: 'Content Creation' },
+            { id: 2, projectId: 1, name: 'Schedule Facebook Ads', assignedTo: 3, dueDate: nextWeekStr, status: 'To Do', priority: 'Medium', taskType: 'Social Post Scheduling' },
+            { id: 3, projectId: 2, name: 'Keyword Research for EU', assignedTo: 2, dueDate: todayStr, status: 'In Progress', priority: 'High', taskType: 'Keyword Research' },
+            { id: 4, projectId: 2, name: 'Fix 404 Errors', assignedTo: 2, dueDate: yesterdayStr, status: 'Completed', priority: 'High', taskType: 'Development' },
+            { id: 5, projectId: 2, name: 'Analyze Competitor Backlinks', assignedTo: 2, dueDate: yesterdayStr, status: 'Waiting for Review', priority: 'Medium', taskType: 'Analytics' },
+            { id: 6, projectId: 3, name: 'Setup Google Ads Account', assignedTo: 3, dueDate: nextWeekStr, status: 'To Do', priority: 'High', taskType: 'Ad Setup' },
+            { id: 7, projectId: 1, name: 'Finalize video script', assignedTo: 4, dueDate: yesterdayStr, status: 'Blocked', priority: 'Low', taskType: 'Content Creation' },
+            { id: 8, projectId: 2, name: 'On-page SEO for landing pages', assignedTo: 2, dueDate: todayStr, status: 'To Do', priority: 'High', taskType: 'SEO Optimization' },
+        ],
+        kpis: [
+            { id: 1, projectId: 1, name: 'Social Engagement', target: 5, actual: 3.5, unit: '%' },
+            { id: 2, projectId: 1, name: 'Leads Generated', target: 100, actual: 65, unit: 'Count' },
+            { id: 3, projectId: 2, name: 'Organic Traffic', target: 20, actual: 15, unit: '% Increase' },
+            { id: 4, projectId: 2, name: 'Conversion Rate', target: 2.5, actual: 2.8, unit: '%' },
+            { id: 5, projectId: 4, name: 'Bounce Rate', target: 40, actual: 35, unit: '%' },
+        ]
+    };
+
+    const statusColors = {
+        'Not Started': 'bg-gray-200 text-gray-800',
+        'In Progress': 'bg-blue-200 text-blue-800',
+        'On Hold': 'bg-yellow-200 text-yellow-800',
+        'Completed': 'bg-green-200 text-green-800',
+        'Cancelled': 'bg-red-200 text-red-800',
+        'Blocked': 'bg-red-200 text-red-800',
+        'To Do': 'bg-gray-200 text-gray-800',
+        'Waiting for Review': 'bg-purple-200 text-purple-800'
+    };
+    
+    const priorityColors = {
+        'High': 'border-l-4 border-red-500',
+        'Medium': 'border-l-4 border-yellow-500',
+        'Low': 'border-l-4 border-green-500',
+    };
+
+    let activeView = 'dashboard';
+    let charts = {};
+
+    const formatCurrency = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+    
+    const wrapText = (ctx, text, maxWidth) => {
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            let word = words[i];
+            let width = ctx.measureText(currentLine + ' ' + word).width;
+            if (width < maxWidth) {
+                currentLine += ' ' + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+    
+    function renderDashboard() {
+        const activeProjects = DB.projects.filter(p => p.status === 'In Progress').length;
+        const tasksDueToday = DB.tasks.filter(t => t.dueDate === todayStr && t.status !== 'Completed').length;
+        const overdueTasks = DB.tasks.filter(t => new Date(t.dueDate) < today && t.status !== 'Completed').length;
+        const totalSpent = DB.projects.reduce((sum, p) => sum + p.budgetSpent, 0);
+
+        document.getElementById('active-projects-stat').textContent = activeProjects;
+        document.getElementById('tasks-due-stat').textContent = tasksDueToday;
+        document.getElementById('overdue-tasks-stat').textContent = overdueTasks;
+        document.getElementById('budget-spent-stat').textContent = formatCurrency(totalSpent);
+
+        const totalAllocated = DB.projects.reduce((sum, p) => sum + p.budgetAllocated, 0);
+        
+        if (charts.budget) charts.budget.destroy();
+        const budgetCtx = document.getElementById('budget-chart').getContext('2d');
+        charts.budget = new Chart(budgetCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Spent', 'Remaining'],
+                datasets: [{
+                    data: [totalSpent, totalAllocated - totalSpent],
+                    backgroundColor: ['#3b82f6', '#e5e7eb'],
+                    borderColor: '#ffffff',
+                    borderWidth: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } } }
+            }
+        });
+        
+        const deadlineList = document.getElementById('deadline-list');
+        deadlineList.innerHTML = '';
+        DB.projects
+            .filter(p => p.status !== 'Completed' && new Date(p.endDate) >= today)
+            .sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+            .slice(0, 5)
+            .forEach(p => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center text-sm p-2 rounded hover:bg-gray-100';
+                li.innerHTML = `<span>${p.name}</span><span class="font-medium text-gray-600">${new Date(p.endDate).toLocaleDateString()}</span>`;
+                deadlineList.appendChild(li);
+            });
+    }
+
+    function renderProjects() {
+        const grid = document.getElementById('projects-grid');
+        grid.innerHTML = '';
+        DB.projects.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow p-5 flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow';
+            card.dataset.id = p.id;
+
+            const spentPercentage = (p.budgetSpent / p.budgetAllocated) * 100;
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-bold text-lg text-gray-800">${p.name}</h3>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColors[p.status]}">${p.status}</span>
+                    </div>
+                    <p class="text-sm text-gray-500">${p.client}</p>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>${formatCurrency(p.budgetSpent)}</span>
+                        <span>${formatCurrency(p.budgetAllocated)}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${spentPercentage}%"></div>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => openProjectModal(p.id));
+            grid.appendChild(card);
+        });
+    }
+    
+    function renderTasks() {
+        renderKanban();
+        renderTaskList();
+    }
+
+    function renderKanban() {
+        const kanbanContainer = document.getElementById('kanban-container');
+        kanbanContainer.innerHTML = '';
+        const statuses = ['To Do', 'In Progress', 'Waiting for Review', 'Blocked', 'Completed'];
+
+        statuses.forEach(status => {
+            const column = document.createElement('div');
+            column.className = 'bg-gray-100 rounded-lg p-3 kanban-column';
+            column.dataset.status = status;
+            column.innerHTML = `<h3 class="font-semibold text-gray-700 mb-4 px-1">${status}</h3><div class="space-y-3 task-list"></div>`;
+            kanbanContainer.appendChild(column);
+
+            column.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(column, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    column.querySelector('.task-list').appendChild(draggable);
+                } else {
+                    column.querySelector('.task-list').insertBefore(draggable, afterElement);
+                }
+            });
+
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                const taskId = e.dataTransfer.getData('text/plain');
+                const task = DB.tasks.find(t => t.id == taskId);
+                if (task) {
+                    task.status = status;
+                    renderKanban(); 
+                }
+            });
+        });
+
+        DB.tasks.forEach(task => {
+            const project = DB.projects.find(p => p.id === task.projectId);
+            const column = kanbanContainer.querySelector(`[data-status="${task.status}"] .task-list`);
+            if (column) {
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-md shadow p-3 kanban-card ${priorityColors[task.priority]}`;
+                card.draggable = true;
+                card.dataset.id = task.id;
+                card.innerHTML = `
+                    <p class="font-medium text-sm">${task.name}</p>
+                    <p class="text-xs text-gray-500 mt-1">${project.name}</p>
+                    <div class="text-xs text-gray-500 mt-2">Due: ${new Date(task.dueDate).toLocaleDateString()}</div>
+                `;
+                
+                card.addEventListener('dragstart', (e) => {
+                    card.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', task.id);
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                });
+
+                card.addEventListener('click', () => openTaskModal(task.id));
+
+                column.appendChild(card);
+            }
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function renderTaskList() {
+        const listBody = document.getElementById('task-list-body');
+        listBody.innerHTML = '';
+        DB.tasks.forEach(task => {
+            const project = DB.projects.find(p => p.id === task.projectId);
+            const row = document.createElement('tr');
+            row.className = 'cursor-pointer hover:bg-gray-50';
+            row.dataset.id = task.id;
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${task.name}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">${project.name}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-500">${new Date(task.dueDate).toLocaleDateString()}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[task.status]}">${task.priority}</span></td>
+            `;
+            row.addEventListener('click', () => openTaskModal(task.id));
+            listBody.appendChild(row);
+        });
+    }
+    
+    function renderTeam() {
+        const grid = document.getElementById('team-grid');
+        grid.innerHTML = '';
+        DB.team.forEach(member => {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow p-5 text-center';
+            card.innerHTML = `
+                <div class="mx-auto bg-gray-200 rounded-full h-20 w-20 flex items-center justify-center text-2xl font-bold text-gray-600">${member.name.charAt(0)}</div>
+                <h3 class="mt-4 font-bold text-lg">${member.name}</h3>
+                <p class="text-sm text-gray-600">${member.role}</p>
+                <p class="text-sm text-blue-600 mt-2">${member.email}</p>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function openProjectModal(projectId) {
+        const project = DB.projects.find(p => p.id == projectId);
+        if (!project) return;
+        
+        document.getElementById('modal-project-name').textContent = project.name;
+        document.getElementById('modal-project-client').textContent = `Client: ${project.client}`;
+        
+        const detailsContainer = document.getElementById('modal-project-details');
+        const manager = DB.team.find(m => m.id === project.managerId);
+        detailsContainer.innerHTML = `
+            <p><strong class="font-medium text-gray-600">Status:</strong> <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColors[project.status]}">${project.status}</span></p>
+            <p><strong class="font-medium text-gray-600">Manager:</strong> ${manager ? manager.name : 'N/A'}</p>
+            <p><strong class="font-medium text-gray-600">Timeline:</strong> ${new Date(project.startDate).toLocaleDateString()} - ${new Date(project.endDate).toLocaleDateString()}</p>
+            <p><strong class="font-medium text-gray-600">Campaign Type:</strong> ${project.campaignType.join(', ')}</p>
+        `;
+
+        if (charts.modalBudget) charts.modalBudget.destroy();
+        const budgetCtx = document.getElementById('modal-budget-chart').getContext('2d');
+        charts.modalBudget = new Chart(budgetCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Budget'],
+                datasets: [
+                    { label: 'Spent', data: [project.budgetSpent], backgroundColor: '#3b82f6' },
+                    { label: 'Allocated', data: [project.budgetAllocated], backgroundColor: '#d1d5db' }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { stacked: true, ticks: { callback: (v) => formatCurrency(v) } }, y: { stacked: true } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.raw)}` } } }
+            }
+        });
+        
+        const projectKPIs = DB.kpis.filter(k => k.projectId === project.id);
+        if (charts.modalKPI) charts.modalKPI.destroy();
+        const kpiCtx = document.getElementById('modal-kpi-chart').getContext('2d');
+        charts.modalKPI = new Chart(kpiCtx, {
+            type: 'bar',
+            data: {
+                labels: projectKPIs.map(k => k.name),
+                datasets: [
+                    { label: 'Actual', data: projectKPIs.map(k => k.actual), backgroundColor: '#3b82f6', barPercentage: 0.6 },
+                    { label: 'Target', data: projectKPIs.map(k => k.target), backgroundColor: '#a5b4fc', barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw}${c.chart.data.labels[c.dataIndex].includes('%') ? '%' : ''}` } } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        document.getElementById('project-modal').classList.remove('hidden');
+    }
+
+    function closeProjectModal() {
+        document.getElementById('project-modal').classList.add('hidden');
+    }
+
+    async function openTaskModal(taskId) {
+        const task = DB.tasks.find(t => t.id == taskId);
+        if (!task) return;
+
+        const project = DB.projects.find(p => p.id === task.projectId);
+        const assignedTo = DB.team.find(m => m.id === task.assignedTo);
+
+        document.getElementById('modal-task-name').textContent = task.name;
+        document.getElementById('modal-task-project').textContent = `Project: ${project ? project.name : 'N/A'}`;
+        document.getElementById('modal-task-assigned-to').textContent = assignedTo ? assignedTo.name : 'N/A';
+        document.getElementById('modal-task-due-date').textContent = new Date(task.dueDate).toLocaleDateString();
+        document.getElementById('modal-task-status').textContent = task.status;
+        document.getElementById('modal-task-status').className = `text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.status]}`;
+        document.getElementById('modal-task-priority').textContent = task.priority;
+        document.getElementById('modal-task-priority').className = `text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.status]}`; // Reusing statusColors for priority for visual consistency, though a priority-specific color map could be added.
+        document.getElementById('modal-task-type').textContent = task.taskType;
+
+        const contentIdeaSection = document.getElementById('content-idea-section');
+        const generateIdeasBtn = document.getElementById('generate-ideas-btn');
+        const contentIdeasOutput = document.getElementById('content-ideas-output');
+        contentIdeasOutput.textContent = ''; // Clear previous ideas
+
+        const relevantTaskTypes = ['Content Creation', 'Social Post Scheduling', 'Email Marketing'];
+        if (relevantTaskTypes.includes(task.taskType)) {
+            contentIdeaSection.classList.remove('hidden');
+            generateIdeasBtn.onclick = async () => {
+                const loadingIndicator = document.getElementById('loading-indicator');
+                loadingIndicator.classList.remove('hidden');
+                generateIdeasBtn.disabled = true;
+                contentIdeasOutput.textContent = '';
+
+                const prompt = `Generate 3-5 creative content ideas for a digital marketing task. The task is: '${task.name}' for the project '${project.name}' which is a '${project.campaignType.join(', ')}' campaign. Focus on actionable ideas for social media posts, blog topics, or ad copy snippets.`;
+                
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        contentIdeasOutput.textContent = text;
+                    } else {
+                        contentIdeasOutput.textContent = 'Could not generate ideas. Please try again.';
+                    }
+                } catch (error) {
+                    console.error('Error generating content ideas:', error);
+                    contentIdeasOutput.textContent = 'Error generating ideas. Please check your connection.';
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    generateIdeasBtn.disabled = false;
+                }
+            };
+        } else {
+            contentIdeaSection.classList.add('hidden');
+        }
+
+        document.getElementById('task-modal').classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+        document.getElementById('task-modal').classList.add('hidden');
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
+        document.getElementById(`${viewName}-view`).classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-btn-active'));
+        document.querySelector(`.nav-btn[data-view="${viewName}"]`).classList.add('nav-btn-active');
+
+        document.querySelectorAll('#mobile-nav button').forEach(btn => {
+            btn.classList.toggle('text-blue-600', btn.dataset.view === viewName);
+            btn.classList.toggle('font-bold', btn.dataset.view === viewName);
+        });
+
+        activeView = viewName;
+    }
+
+    document.getElementById('desktop-nav').addEventListener('click', (e) => {
+        if (e.target.matches('button')) switchView(e.target.dataset.view);
+    });
+
+    document.getElementById('mobile-nav').addEventListener('click', (e) => {
+        if (e.target.matches('button')) switchView(e.target.dataset.view);
+    });
+
+    document.getElementById('close-modal-btn').addEventListener('click', closeProjectModal);
+    document.getElementById('project-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'project-modal') closeProjectModal();
+    });
+
+    document.getElementById('close-task-modal-btn').addEventListener('click', closeTaskModal);
+    document.getElementById('task-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'task-modal') closeTaskModal();
+    });
+
+    document.getElementById('show-kanban-btn').addEventListener('click', () => {
+        document.getElementById('kanban-board-view').classList.remove('hidden');
+        document.getElementById('list-view').classList.add('hidden');
+        document.getElementById('show-kanban-btn').classList.add('bg-blue-600', 'text-white');
+        document.getElementById('show-list-btn').classList.remove('bg-blue-600', 'text-white');
+        document.getElementById('show-list-btn').classList.add('bg-white', 'text-gray-900');
+    });
+
+    document.getElementById('show-list-btn').addEventListener('click', () => {
+        document.getElementById('kanban-board-view').classList.add('hidden');
+        document.getElementById('list-view').classList.remove('hidden');
+        document.getElementById('show-list-btn').classList.add('bg-blue-600', 'text-white');
+        document.getElementById('show-kanban-btn').classList.remove('bg-blue-600', 'text-white');
+        document.getElementById('show-kanban-btn').classList.add('bg-white', 'text-gray-900');
+    });
+
+    switchView('dashboard');
+    renderDashboard();
+    renderProjects();
+    renderTasks();
+    renderTeam();
+});
+</script>
+</body>
+</html>

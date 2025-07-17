@@ -66,9 +66,14 @@
             </div>
 
             <div id="projects-view" class="view-content hidden">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-semibold text-gray-700">Projects</h2>
-                    <p class="mt-1 text-gray-600">Explore all digital marketing projects. Click on any project card to view its detailed information, including associated tasks, budget breakdown, and performance against key indicators (KPIs). Use the filters to narrow down your search.</p>
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-700">Projects</h2>
+                        <p class="mt-1 text-gray-600">Explore all digital marketing projects. Click on any project card to view its detailed information, including associated tasks, budget breakdown, and performance against key indicators (KPIs). Use the filters to narrow down your search.</p>
+                    </div>
+                    <button id="add-project-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
+                        <span class="text-xl mr-2">+</span> Add New Project
+                    </button>
                 </div>
                 <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
@@ -140,6 +145,14 @@
                         </div>
                     </div>
                 </div>
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Project Comments</h4>
+                    <textarea id="modal-project-comments-input" class="w-full p-2 border rounded-md text-sm focus:border-blue-500 focus:ring-blue-500" rows="4" placeholder="Add your current project notes or comments here..."></textarea>
+                    <button id="save-comment-btn" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">Save Comment</button>
+                    <div id="modal-project-comments-history" class="mt-4 space-y-2 text-sm bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+                        <p class="text-gray-500">No previous comments.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -167,6 +180,64 @@
                     <div id="content-ideas-output" class="mt-3 p-3 bg-gray-100 rounded-md text-sm whitespace-pre-wrap"></div>
                     <div id="loading-indicator" class="mt-2 text-blue-600 hidden">Generating ideas...</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-edit-project-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-30 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-start">
+                    <h3 class="text-2xl leading-6 font-bold text-gray-900" id="add-edit-project-modal-title">Add New Project</h3>
+                    <button id="close-add-edit-project-modal-btn" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <form id="project-form" class="mt-4 space-y-4">
+                    <div>
+                        <label for="project-name" class="block text-sm font-medium text-gray-700">Project Name</label>
+                        <input type="text" id="project-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required>
+                    </div>
+                    <div>
+                        <label for="client-name" class="block text-sm font-medium text-gray-700">Client Name</label>
+                        <input type="text" id="client-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required>
+                    </div>
+                    <div>
+                        <label for="project-status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="project-status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                            <option value="Lead">Lead</option>
+                            <option value="Proposal">Proposal</option>
+                            <option value="Negotiation">Negotiation</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Deal">Deal</option>
+                            <option value="Lost">Lost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="project-type" class="block text-sm font-medium text-gray-700">Project</label>
+                        <input type="text" id="project-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="vendor" class="block text-sm font-medium text-gray-700">Vendor</label>
+                        <input type="text" id="vendor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                            <input type="date" id="start-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required>
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">End Date</label>
+                            <input type="date" id="end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="budget-allocated" class="block text-sm font-medium text-gray-700">Budget (IDR)</label>
+                        <input type="number" id="budget-allocated" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" min="0" required>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-project-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Project</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -202,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 4, name: 'Diana Miller', role: 'Content Creator', email: 'diana@example.com' },
         ],
         projects: [
-            { id: 1, name: 'Q3 Social Media Blitz', client: 'Innovate Inc.', managerId: 1, startDate: '2025-07-01', endDate: nextWeekStr, status: 'In Progress', budgetAllocated: 15000, budgetSpent: 9500, campaignType: ['Social Media', 'Content Marketing'] },
-            { id: 2, name: 'Global SEO Overhaul', client: 'TechCorp', managerId: 1, startDate: '2025-06-15', endDate: '2025-08-30', status: 'In Progress', budgetAllocated: 25000, budgetSpent: 18000, campaignType: ['SEO', 'Analytics'] },
-            { id: 3, name: 'Summer PPC Campaign', client: 'Retail Giant', managerId: 1, startDate: '2025-07-10', endDate: '2025-08-15', status: 'Not Started', budgetAllocated: 10000, budgetSpent: 0, campaignType: ['PPC'] },
-            { id: 4, name: 'Website Redesign', client: 'Innovate Inc.', managerId: 1, startDate: '2025-05-01', endDate: '2025-07-25', status: 'Completed', budgetAllocated: 30000, budgetSpent: 29500, campaignType: ['Web Development', 'Design'] },
+            { id: 1, name: 'Q3 Social Media Blitz', client: 'Innovate Inc.', managerId: 1, startDate: '2025-07-01', endDate: nextWeekStr, status: 'In Progress', budgetAllocated: 15000000, budgetSpent: 9500000, campaignType: ['Social Media', 'Content Marketing'], projectType: 'Campaign', vendor: 'Internal', currentComment: 'Initial strategy meeting notes: Focus on short-form video content and influencer collaborations.', commentHistory: [] },
+            { id: 2, name: 'Global SEO Overhaul', client: 'TechCorp', managerId: 1, startDate: '2025-06-15', endDate: '2025-08-30', status: 'In Progress', budgetAllocated: 25000000, budgetSpent: 18000000, campaignType: ['SEO', 'Analytics'], projectType: 'Optimization', vendor: 'SEO Agency X', currentComment: 'Deep dive into keyword opportunities for European markets.', commentHistory: [{text: 'Initial SEO audit completed.', timestamp: '2025-06-20T09:00:00Z'}] },
+            { id: 3, name: 'Summer PPC Campaign', client: 'Retail Giant', managerId: 1, startDate: '2025-07-10', endDate: '2025-08-15', status: 'Lead', budgetAllocated: 10000000, budgetSpent: 0, campaignType: ['PPC'], projectType: 'Campaign', vendor: 'Internal', currentComment: 'Awaiting client feedback on ad creatives.', commentHistory: [] },
+            { id: 4, name: 'Website Redesign', client: 'Innovate Inc.', managerId: 1, startDate: '2025-05-01', endDate: '2025-07-25', status: 'Deal', budgetAllocated: 30000000, budgetSpent: 29500000, campaignType: ['Web Development', 'Design'], projectType: 'Development', vendor: 'WebDev Solutions', currentComment: 'Final UAT in progress. Launch scheduled for next week.', commentHistory: [{text: 'Design mockups approved.', timestamp: '2025-05-15T11:00:00Z'}, {text: 'Frontend development 80% complete.', timestamp: '2025-06-10T16:00:00Z'}] },
         ],
         tasks: [
             { id: 1, projectId: 1, name: 'Draft Instagram Posts', assignedTo: 4, dueDate: tomorrowStr, status: 'In Progress', priority: 'High', taskType: 'Content Creation' },
@@ -227,14 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const statusColors = {
-        'Not Started': 'bg-gray-200 text-gray-800',
+        'Lead': 'bg-purple-200 text-purple-800',
+        'Proposal': 'bg-yellow-200 text-yellow-800',
+        'Negotiation': 'bg-orange-200 text-orange-800',
         'In Progress': 'bg-blue-200 text-blue-800',
-        'On Hold': 'bg-yellow-200 text-yellow-800',
-        'Completed': 'bg-green-200 text-green-800',
-        'Cancelled': 'bg-red-200 text-red-800',
-        'Blocked': 'bg-red-200 text-red-800',
+        'Deal': 'bg-green-200 text-green-800',
+        'Lost': 'bg-red-200 text-red-800',
+        // Task-specific statuses (kept separate for clarity)
         'To Do': 'bg-gray-200 text-gray-800',
-        'Waiting for Review': 'bg-purple-200 text-purple-800'
+        'Waiting for Review': 'bg-indigo-200 text-indigo-800',
+        'Completed': 'bg-green-200 text-green-800',
+        'Blocked': 'bg-red-200 text-red-800'
     };
     
     const priorityColors = {
@@ -246,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeView = 'dashboard';
     let charts = {};
 
-    const formatCurrency = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+    const formatCurrency = (amount) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
     
     const wrapText = (ctx, text, maxWidth) => {
         const words = text.split(' ');
@@ -268,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderDashboard() {
-        const activeProjects = DB.projects.filter(p => p.status === 'In Progress').length;
+        const activeProjects = DB.projects.filter(p => p.status === 'In Progress' || p.status === 'Negotiation' || p.status === 'Proposal').length;
         const tasksDueToday = DB.tasks.filter(t => t.dueDate === todayStr && t.status !== 'Completed').length;
         const overdueTasks = DB.tasks.filter(t => new Date(t.dueDate) < today && t.status !== 'Completed').length;
         const totalSpent = DB.projects.reduce((sum, p) => sum + p.budgetSpent, 0);
@@ -303,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const deadlineList = document.getElementById('deadline-list');
         deadlineList.innerHTML = '';
         DB.projects
-            .filter(p => p.status !== 'Completed' && new Date(p.endDate) >= today)
+            .filter(p => p.status !== 'Deal' && p.status !== 'Lost' && new Date(p.endDate) >= today)
             .sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
             .slice(0, 5)
             .forEach(p => {
@@ -478,6 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong class="font-medium text-gray-600">Manager:</strong> ${manager ? manager.name : 'N/A'}</p>
             <p><strong class="font-medium text-gray-600">Timeline:</strong> ${new Date(project.startDate).toLocaleDateString()} - ${new Date(project.endDate).toLocaleDateString()}</p>
             <p><strong class="font-medium text-gray-600">Campaign Type:</strong> ${project.campaignType.join(', ')}</p>
+            <p><strong class="font-medium text-gray-600">Project:</strong> ${project.projectType || 'N/A'}</p>
+            <p><strong class="font-medium text-gray-600">Vendor:</strong> ${project.vendor || 'N/A'}</p>
         `;
 
         if (charts.modalBudget) charts.modalBudget.destroy();
@@ -520,6 +596,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const commentsInput = document.getElementById('modal-project-comments-input');
+        const commentsHistory = document.getElementById('modal-project-comments-history');
+        
+        commentsInput.value = project.currentComment || '';
+        commentsHistory.innerHTML = '';
+        if (project.commentHistory && project.commentHistory.length > 0) {
+            project.commentHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(comment => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'p-2 border border-gray-200 rounded-md bg-white';
+                commentDiv.innerHTML = `<p>${comment.text}</p><p class="text-right text-xs text-gray-400 mt-1">${new Date(comment.timestamp).toLocaleString()}</p>`;
+                commentsHistory.appendChild(commentDiv);
+            });
+        } else {
+            commentsHistory.innerHTML = '<p class="text-gray-500">No previous comments.</p>';
+        }
+
+        document.getElementById('save-comment-btn').onclick = () => {
+            const newCommentText = commentsInput.value.trim();
+            if (newCommentText !== project.currentComment) {
+                if (project.currentComment && project.currentComment.trim() !== '') {
+                    project.commentHistory.push({
+                        text: project.currentComment,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                project.currentComment = newCommentText;
+                openProjectModal(projectId); // Re-render modal to update history
+            }
+        };
+
         document.getElementById('project-modal').classList.remove('hidden');
     }
 
@@ -541,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-task-status').textContent = task.status;
         document.getElementById('modal-task-status').className = `text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.status]}`;
         document.getElementById('modal-task-priority').textContent = task.priority;
-        document.getElementById('modal-task-priority').className = `text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.status]}`; // Reusing statusColors for priority for visual consistency, though a priority-specific color map could be added.
+        document.getElementById('modal-task-priority').className = `text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.priority]}`; // Reusing statusColors for priority for visual consistency, though a priority-specific color map could be added.
         document.getElementById('modal-task-type').textContent = task.taskType;
 
         const contentIdeaSection = document.getElementById('content-idea-section');
@@ -599,6 +705,57 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeTaskModal() {
         document.getElementById('task-modal').classList.add('hidden');
     }
+
+    function openAddEditProjectModal() {
+        document.getElementById('add-edit-project-modal').classList.remove('hidden');
+        document.getElementById('project-form').reset();
+        document.getElementById('add-edit-project-modal-title').textContent = 'Add New Project';
+    }
+
+    function closeAddEditProjectModal() {
+        document.getElementById('add-edit-project-modal').classList.add('hidden');
+    }
+
+    document.getElementById('add-project-btn').addEventListener('click', openAddEditProjectModal);
+    document.getElementById('close-add-edit-project-modal-btn').addEventListener('click', closeAddEditProjectModal);
+    document.getElementById('cancel-project-btn').addEventListener('click', closeAddEditProjectModal);
+    document.getElementById('add-edit-project-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'add-edit-project-modal') closeAddEditProjectModal();
+    });
+
+    document.getElementById('project-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const projectName = document.getElementById('project-name').value;
+        const clientName = document.getElementById('client-name').value;
+        const projectStatus = document.getElementById('project-status').value;
+        const projectType = document.getElementById('project-type').value;
+        const vendor = document.getElementById('vendor').value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        const budgetAllocated = parseFloat(document.getElementById('budget-allocated').value);
+
+        const newProject = {
+            id: DB.projects.length + 1, // Simple ID generation
+            name: projectName,
+            client: clientName,
+            managerId: 1, // Default to Alice for new projects
+            startDate: startDate,
+            endDate: endDate,
+            status: projectStatus,
+            budgetAllocated: budgetAllocated,
+            budgetSpent: 0, // New projects start with 0 spent
+            campaignType: [], // Can be expanded later if needed
+            projectType: projectType,
+            vendor: vendor,
+            currentComment: '',
+            commentHistory: []
+        };
+
+        DB.projects.push(newProject);
+        renderProjects();
+        renderDashboard(); // Update dashboard stats
+        closeAddEditProjectModal();
+    });
 
     function switchView(viewName) {
         document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
